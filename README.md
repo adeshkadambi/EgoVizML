@@ -48,20 +48,32 @@ EgoVizML (root of repository)
 ### Project Setup
 
 1. Clone the repository
-2. Create a virtual environment
 
-3. Install dependencies
+2. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install poetry
+poetry install
 ```
 
-4. Install the `egoviz` package
+3. Activate the virtual environment
+
+```bash
+poetry shell
+```
+
+4. Install the `egoviz` package in editable mode
 
 ```bash
 pip install -e src
 ```
 
+You can add and remove dependencies using the following:
+
+```bash
+poetry add <package>
+poetry remove <package>
+```
 
 ## ADL Detection Classes
 
@@ -94,4 +106,3 @@ _Planning, preparing, and serving well-balanced, nutritious meals and cleaning u
 #### Leisure and Other
 
 _Nonobligatory activity that is intrinsically motivated and engaged in during discretionary time, that is, time not committed to obligatory occupations or any of the aforementioned ADLs or iADLs._
-
