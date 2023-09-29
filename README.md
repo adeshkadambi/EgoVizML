@@ -62,17 +62,20 @@ poetry install
 poetry shell
 ```
 
-4. Install the `egoviz` package in editable mode
-
-```bash
-pip install -e src
-```
+### Dependency Management
 
 You can add and remove dependencies using the following:
 
 ```bash
 poetry add <package>
 poetry remove <package>
+```
+
+To update the egoviz package:
+
+```bash
+pip uninstall egoviz
+poetry install
 ```
 
 ## ADL Detection Classes
