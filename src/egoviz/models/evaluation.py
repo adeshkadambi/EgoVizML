@@ -68,7 +68,7 @@ def evaluate_k_fold(clf: Classifier, X, y, k=5, seed=0):
 
     score_df = pd.DataFrame(scores)
     score_df["model"] = clf.__class__.__name__
-    score_df["mean_f1_macro"] = score_df["test_f1_macro"].mean()
-    score_df["std_f1_macro"] = score_df["test_f1_macro"].std()
+    score_df["mean_f1_macro"] = round(score_df["test_f1_macro"].mean(), 2)
+    score_df["std_f1_macro"] = round(score_df["test_f1_macro"].std(), 2)
 
     return score_df
