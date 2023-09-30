@@ -1,10 +1,9 @@
-import cv2
-import os
-import argparse
-from moviepy.editor import VideoFileClip
-from math import floor
-import tqdm
 import logging
+import os
+from math import floor
+
+import cv2
+from moviepy.editor import VideoFileClip
 
 # Configure the logger
 logging.basicConfig(

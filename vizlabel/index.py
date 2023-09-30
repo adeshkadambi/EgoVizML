@@ -1,42 +1,103 @@
-import os
 import streamlit as st
 
-st.set_page_config(
-    page_title="EgoViz Label",
-    page_icon="🎥",
-    layout="wide",
-    # initial_sidebar_state="collapsed",
+from utils import (
+    get_subclip_paths,
+    event_listener,
+    save_labels,
+    delete_session_state,
+    increment_idx,
+    decrement_idx,
 )
 
-st.title("🎥 EgoViz Labeller")
-st.subheader("A tool for labelling ADLs in egocentric videos.")
 
-dir = st.text_input("Enter absolute path to videos directory...")
-st.write("Current directory: ", dir)
+def main():
+    st.set_page_config(
+        page_title="EgoViz Label",
+        page_icon="🎥",
+        layout="wide",
+    )
 
-# get all videos in directory, including subdirectories
-videos = []
-for root, dirs, files in os.walk(dir):
-    for file in files:
-        if file.endswith(".mp4") or file.endswith(".MP4"):
-            videos.append(os.path.join(root, file))
+    st.title("🎥 EgoViz Labeller")
+    st.subheader("A tool for labelling ADLs in egocentric videos.")
 
-# get paths for all videos in directory
-video_paths = []
-for video in videos:
-    video_paths.append(os.path.join(dir, video))
+    dir_path = st.text_input(
+        "Enter absolute path to videos directory...",
+        on_change=delete_session_state,
+    )
 
-st.write("Videos found: ", video_paths)
+    video_paths = get_subclip_paths(dir_path)
 
-# load one video at a time and display a "next" and "previous" button to cycle through videos
+    with st.expander("Videos Found"):
+        st.write(video_paths)
 
-col1, col2 = st.columns([1, 3])
+    # Initialize session state variables
 
-with col1:
-    current_video_index = 0
-    st.write("Current video: ", video_paths[current_video_index])
+    if "idx" not in st.session_state:
+        st.session_state.idx = 0
 
-    current_video_index = st.selectbox()
+    if "videos" not in st.session_state:
+        st.session_state.videos = video_paths
 
-with col2:
-    st.video(video_paths[current_video_index])
+    if "num_videos" not in st.session_state:
+        st.session_state.num_videos = len(video_paths)
+
+    if "labels" not in st.session_state:
+        st.session_state.labels = {}
+
+    col1, col2 = st.columns([1, 3])
+
+    # Render ADL classification form
+    with col1:
+        btn1, btn2 = st.columns(2)
+        with btn1:
+            st.button("Previous", on_click=decrement_idx, use_container_width=True)
+        with btn2:
+            st.button("Next", on_click=increment_idx, use_container_width=True)
+
+        current_video = str(st.session_state.videos[st.session_state.idx])
+
+        with st.form("adl_form", clear_on_submit=True):
+            adl = st.radio(
+                label="ADL Classification",
+                options=[
+                    "communication-mgmt",
+                    "functional-mobility",
+                    "grooming-health-mgmt",
+                    "home-management",
+                    "leisure-other",
+                    "meal-prep-cleanup",
+                    "self-feeding",
+                ],
+                index=None,
+            )
+            submit = st.form_submit_button(label="Submit")
+
+            if submit:
+                st.session_state.labels[current_video] = adl
+                st.success(f"Label saved as {adl}!")
+
+        st.write(
+            "Completed Videos: ",
+            len(st.session_state.labels),
+            "/",
+            st.session_state.num_videos,
+        )
+
+    # Render video player
+    with col2:
+        st.video(current_video)
+
+    # Render save button
+    filename = st.text_input("Enter filename to save labels as...", value="labels")
+    st.button(
+        "Save Labels",
+        on_click=save_labels,
+        args=(st.session_state.labels, filename),
+        use_container_width=True,
+    )
+    st.write("Labels:", st.session_state.labels)
+
+
+if __name__ == "__main__":
+    main()
+    event_listener()

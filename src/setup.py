@@ -6,5 +6,5 @@ setup(
     author="Adesh Kadambi",
     author_email="adeshkadambi@gmail.com",
     packages=find_packages(),
-    install_requires=["moviepy>=1.0.3"],
+    install_requires=["moviepy>=1.0.3", "opencv-python"],
 )
