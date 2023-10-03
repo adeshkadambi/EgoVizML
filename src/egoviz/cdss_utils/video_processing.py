@@ -60,7 +60,7 @@ def save_subclips(video_path, root, n=60, fps=10, frame_fps=2):
         logger.error(f"Error: {e} for file: {video_path}")
 
 
-def frame_split(video_path, output_folder, fps):
+def frame_split(video_path, output_folder, fps=2):
     """
     Split video into frames and save in output_folder
     """
@@ -83,7 +83,9 @@ def frame_split(video_path, output_folder, fps):
     cv2.destroyAllWindows()
 
 
-def process_videos_in_folder(dirpath, subclip_length=60, fps=10, frame_fps=2):
+def process_videos_in_folder(
+    dirpath, subclip_length=60, fps=10, frame_fps=2, frames_only=False
+):
     """
     Split videos into subclips and frames in the same folder structure
     """
@@ -91,4 +93,16 @@ def process_videos_in_folder(dirpath, subclip_length=60, fps=10, frame_fps=2):
     for file in os.listdir(dirpath):
         if file.endswith(".MP4"):
             os.chdir(dirpath)
-            save_subclips(file, dirpath, subclip_length, fps, frame_fps)
+
+            if not frames_only:
+                save_subclips(file, dirpath, subclip_length, fps, frame_fps)
+            else:
+                # Create a folder for frames
+                frame_output_folder = os.path.splitext(file)[0]
+                os.makedirs(frame_output_folder, exist_ok=True)
+
+                # Split video into frames and save
+                frame_split(file, frame_output_folder, fps=frame_fps)
+
+                # Log progress
+                logger.info(f"Frames split for video: {file}")

@@ -36,10 +36,15 @@ def main():
         default=2,
         help="Frames per second for frames (default: 2)",
     )
+    parser.add_argument(
+        "--frames_only",
+        action="store_true",
+        help="Split videos into frames only, skipping subclip creation",
+    )
     args = parser.parse_args()
 
     process_videos_in_folder(
-        args.dirpath, args.subclip_length, args.fps, args.frame_fps
+        args.dirpath, args.subclip_length, args.fps, args.frame_fps, args.frames_only
     )
 
 
