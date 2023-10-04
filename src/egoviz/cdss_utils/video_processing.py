@@ -106,3 +106,43 @@ def process_videos_in_folder(
 
                 # Log progress
                 logger.info(f"Frames split for video: {file}")
+
+
+class VideoObject:
+    def __init__(self, root, file):
+        self.root = root
+        self.file = file
+        self.video = os.path.join(root, file)
+
+        # Configure the logger
+        logging.basicConfig(
+            level=logging.INFO,  # Set the desired logging level (e.g., INFO, DEBUG)
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        )
+        self.logger = logging.getLogger(__name__)
+
+    def frame_split(self, fps, dir="frames"):
+        cap = cv2.VideoCapture(self.video)
+        fps_original = int(cap.get(cv2.CAP_PROP_FPS))
+        downsample = fps_original // fps
+        if not os.path.isdir(os.path.join(self.root, dir)):
+            os.mkdir(os.path.join(self.root, dir))
+            print("Made Directory:", os.path.join(self.root, dir))
+
+        idx = 0
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            if idx % downsample == 0:
+                outpath = os.path.join(
+                    self.root, dir, f'{self.file.split(".")[0]}_frame{idx}.jpg'
+                )
+                cv2.imwrite(outpath, frame)
+            idx += 1
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+        # log progress
+        self.logger.info(f"Frames split for video: {self.video}")
