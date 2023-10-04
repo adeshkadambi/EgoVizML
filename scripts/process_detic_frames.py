@@ -32,11 +32,7 @@ from tqdm import tqdm
 import numpy as np
 import pandas as pd
 
-
-def load_pickle(filepath: str):
-    with open(filepath, "rb") as f:
-        data = pickle.load(f)
-    return data
+from egoviz.models.processing import load_pickle
 
 
 def _load_mapping_df():

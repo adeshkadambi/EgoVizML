@@ -48,17 +48,17 @@ def evaluate_model(clf: Classifier, X_test, y_test):
 def evaluate_k_fold(clf: Classifier, X, y, k=5, seed=0):
     """Evaluate a classifier using k-fold cross validation."""
 
-    kf = KFold(n_splits=5, random_state=seed, shuffle=True)
+    kf = KFold(n_splits=k, random_state=seed, shuffle=True)
 
     # get f1, precision, and recall scores for each fold
     scoring = ["f1_macro", "precision_macro", "recall_macro"]
     scores = cross_validate(
         clf,
-        X.drop(columns=["image"]),
+        X,
         y,
         scoring=scoring,
         cv=kf,
-        return_train_score=False,
+        return_train_score=True,
     )
 
     # print the mean of each score
