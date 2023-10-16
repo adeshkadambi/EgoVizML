@@ -1,0 +1,104 @@
+{
+  "SCI06": {
+    "communication-management": 11,
+    "functional-mobility": 2,
+    "grooming-health-management": 1,
+    "home-management": 3,
+    "leisure-other-activities": 22,
+    "meal-preparation-cleanup": 60,
+    "self-feeding": 4
+  },
+  "SCI11": {
+    "communication-management": 125,
+    "functional-mobility": 11,
+    "grooming-health-management": 19,
+    "home-management": 6,
+    "leisure-other-activities": 1,
+    "self-feeding": 36
+  },
+  "SCI12": {
+    "communication-management": 56,
+    "functional-mobility": 10,
+    "grooming-health-management": 8,
+    "home-management": 105,
+    "leisure-other-activities": 12,
+    "meal-preparation-cleanup": 22,
+    "self-feeding": 7
+  },
+  "SCI13": {
+    "communication-management": 86,
+    "functional-mobility": 1,
+    "grooming-health-management": 50,
+    "self-feeding": 40
+  },
+  "SCI14": {
+    "communication-management": 43,
+    "functional-mobility": 15,
+    "grooming-health-management": 4,
+    "leisure-other-activities": 19,
+    "meal-preparation-cleanup": 73,
+    "self-feeding": 30
+  },
+  "SCI15": {
+    "communication-management": 11,
+    "home-management": 33,
+    "meal-preparation-cleanup": 124,
+    "self-feeding": 2
+  },
+  "SCI16": {
+    "communication-management": 18,
+    "functional-mobility": 1,
+    "home-management": 108,
+    "meal-preparation-cleanup": 67,
+    "self-feeding": 11
+  },
+  "SCI17": {
+    "communication-management": 31,
+    "functional-mobility": 1,
+    "home-management": 105,
+    "meal-preparation-cleanup": 92
+  },
+  "SCI18": {
+    "communication-management": 30,
+    "functional-mobility": 7,
+    "meal-preparation-cleanup": 6,
+    "self-feeding": 24
+  },
+  "SCI19": {
+    "communication-management": 13,
+    "grooming-health-management": 30,
+    "leisure-other-activities": 2,
+    "self-feeding": 4
+  },
+  "SCI20": {
+    "communication-management": 4,
+    "meal-preparation-cleanup": 20,
+    "self-feeding": 34
+  },
+  "SCI02": {
+    "functional-mobility": 2,
+    "grooming-health-management": 1,
+    "home-management": 3,
+    "meal-preparation-cleanup": 71,
+    "self-feeding": 19
+  },
+  "SCI03": {
+    "functional-mobility": 7,
+    "home-management": 17,
+    "meal-preparation-cleanup": 38,
+    "self-feeding": 2
+  },
+  "SCI10": {
+    "functional-mobility": 146,
+    "grooming-health-management": 28,
+    "self-feeding": 44
+  },
+  "SCI21": {
+    "functional-mobility": 4,
+    "grooming-health-management": 28,
+    "home-management": 23,
+    "leisure-other-activities": 109,
+    "meal-preparation-cleanup": 52
+  },
+  "SCI08": { "grooming-health-management": 3, "home-management": 4 }
+}
