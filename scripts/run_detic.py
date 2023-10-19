@@ -8,6 +8,12 @@ Example usage:
 
 ```bash
 cd Detic
+
+(if you don't want to save output images)
+python run_detic.py --input-dir /path/to/input/dir --output-dir /path/to/output/dir --no-images 
+
+
+(if you want to save output images)
 python run_detic.py --input-dir /path/to/input/dir --output-dir /path/to/output/dir
 ```
 """
@@ -68,6 +74,9 @@ def get_parser():
     parser.add_argument(
         "--output-dir", required=True, help="Directory to save output and predictions"
     )
+    parser.add_argument(
+        "--no-images", required=False, action="store_true", help="Save output images"
+    )
     parser.add_argument("--pred_all_class", action="store_true")
     parser.add_argument(
         "--confidence-threshold",
@@ -87,7 +96,7 @@ def get_parser():
     parser.add_argument(
         "--num-workers",
         type=int,
-        default=4,
+        default=16,
         help="Number of worker threads for parallel processing",
     )
     parser.add_argument(
@@ -103,7 +112,7 @@ def process_image(input_path, args, demo):
     img = read_image(input_path, format="BGR")
     start_time = time.time()  # Start timing
 
-    predictions, _, metadata = demo.run_on_image(img)
+    predictions, visualized_output, metadata = demo.run_on_image(img)
 
     # Calculate processing time
     processing_time = time.time() - start_time
@@ -117,10 +126,10 @@ def process_image(input_path, args, demo):
 
     logging.info("{}: {} in {:.2f}s".format(input_path, progress_info, processing_time))
 
-    # Save visualized output (optional)
     out_filename = os.path.join(args.output_dir, os.path.basename(input_path))
-    visualized_output = predictions.get("visualization")
-    if visualized_output is not None:
+
+    # Save visualized output (optional)
+    if not args.no_images:
         visualized_output.save(out_filename)
 
     # Save predictions as pkl
