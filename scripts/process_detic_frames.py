@@ -1,27 +1,3 @@
-# import pickle
-# import os
-# import numpy as np
-
-
-# # load sample pickle file and print its contents
-# def load_frame_preds(filepath: str):
-#     with open(filepath, "rb") as f:
-#         frame_preds = pickle.load(f)
-#     return frame_preds
-
-
-# # load sample pickle file and print its contents
-# dirpath = "D:\\PhD\\adl_recognition\\test_folder\\detic"
-
-# # for pickle file in dirpath, load and print its contents
-# for file in os.listdir(dirpath):
-#     if file.endswith(".pkl"):
-#         filepath = os.path.join(dirpath, file)
-#         frame_preds = load_frame_preds(filepath)
-#         print(f"File: {file}")
-#         print(frame_preds)
-#         print("\n")
-
 import os
 import pickle
 import argparse
