@@ -1,10 +1,19 @@
 """This module contains functions for evaluating sklearn models."""
 
+import warnings
 from typing import Protocol
 
 import pandas as pd
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import cross_validate, KFold
+from sklearn.exceptions import UndefinedMetricWarning
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
+from sklearn.model_selection import KFold, LeaveOneGroupOut, cross_validate
 
 
 class Classifier(Protocol):
@@ -72,3 +81,51 @@ def evaluate_k_fold(clf: Classifier, X, y, k=5, seed=0):
     score_df["std_f1_macro"] = round(score_df["test_f1_macro"].std(), 2)
 
     return score_df
+
+
+def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
+    """Evaluate a classifier using leave one group out cross validation."""
+
+    logo = LeaveOneGroupOut()
+    evaluation_metrics = {}
+
+    for train_index, test_index in logo.split(X, y, groups=groups):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        # Initialize and train the classifier
+        clf.fit(X_train, y_train)
+
+        # Make predictions and evaluate the model
+        y_pred = clf.predict(X_test)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+            precision = precision_score(
+                y_test, y_pred, average="macro", zero_division=1
+            )
+            recall = recall_score(y_test, y_pred, average="macro", zero_division=1)
+            f1 = f1_score(y_test, y_pred, average="macro", zero_division=1)
+        accuracy = accuracy_score(y_test, y_pred)
+
+        # get key as group left out
+        group_left_out = df.iloc[test_index]["video"].values[0][:5]
+
+        # save results in a dict
+        evaluation_metrics[group_left_out] = {
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1,
+        }
+
+    results = pd.DataFrame.from_dict(evaluation_metrics, orient="index")
+    results = results.reset_index()
+    results = results.rename(columns={"index": "group_left_out"})
+
+    # get mean accuracy, precision, recall and f1-score
+    results["mean_accuracy"] = results["accuracy"].mean()
+    results["mean_precision"] = results["precision"].mean()
+    results["mean_recall"] = results["recall"].mean()
+    results["mean_f1"] = results["f1"].mean()
+
+    return results
