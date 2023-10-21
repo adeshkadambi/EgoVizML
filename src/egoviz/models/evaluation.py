@@ -2,6 +2,7 @@
 
 import warnings
 from typing import Protocol
+import logging
 
 import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
@@ -14,6 +15,12 @@ from sklearn.metrics import (
     recall_score,
 )
 from sklearn.model_selection import KFold, LeaveOneGroupOut, cross_validate
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 class Classifier(Protocol):
@@ -93,8 +100,18 @@ def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
         y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
+        # get key as group left out
+        group_left_out = df.iloc[test_index]["video"].values[0][:5]
+
         # Initialize and train the classifier
         clf.fit(X_train, y_train)
+
+        # log that training is complete
+        logging.info(
+            "Training complete for %s, group left out: %s",
+            clf.__class__.__name__,
+            group_left_out,
+        )
 
         # Make predictions and evaluate the model
         y_pred = clf.predict(X_test)
@@ -106,9 +123,6 @@ def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
             recall = recall_score(y_test, y_pred, average="macro", zero_division=1)
             f1 = f1_score(y_test, y_pred, average="macro", zero_division=1)
         accuracy = accuracy_score(y_test, y_pred)
-
-        # get key as group left out
-        group_left_out = df.iloc[test_index]["video"].values[0][:5]
 
         # save results in a dict
         evaluation_metrics[group_left_out] = {
@@ -127,5 +141,8 @@ def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
     results["mean_precision"] = results["precision"].mean()
     results["mean_recall"] = results["recall"].mean()
     results["mean_f1"] = results["f1"].mean()
+
+    # log complete
+    logging.info("LOGOCV complete for %s", clf.__class__.__name__)
 
     return results
