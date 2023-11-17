@@ -2,7 +2,7 @@
 
 ### AssertionError: Torch not compiled with CUDA enabled
 
-This usually occurs when running the detic model.
+This usually occurs as a result of running `poetry install` which ends up installing torch without cuda.
 
 1. Uninstall torch and torchvision.
 
