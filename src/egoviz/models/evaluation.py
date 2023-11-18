@@ -1,10 +1,13 @@
 """This module contains functions for evaluating sklearn models."""
 
 import warnings
-from typing import Protocol
+from typing import Optional, Protocol
 import logging
 
 import pandas as pd
+import pickle
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import (
     accuracy_score,
@@ -25,6 +28,8 @@ logging.basicConfig(
 
 class Classifier(Protocol):
     """Protocol for sklearn classifiers."""
+
+    classes_: list
 
     def fit(self, X, y):
         ...
@@ -90,15 +95,23 @@ def evaluate_k_fold(clf: Classifier, X, y, k=5, seed=0):
     return score_df
 
 
-def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
-    """Evaluate a classifier using leave one group out cross validation."""
+def leave_one_group_out_cv(
+    df, X, y, groups, clf: Classifier, model_save_path: Optional[str] = None, xgb=False
+) -> pd.DataFrame:
+    """Evaluate a classifier using leave one group out cross-validation."""
 
     logo = LeaveOneGroupOut()
     evaluation_metrics = {}
+    all_y_true = []
+    all_y_pred = []
 
     for train_index, test_index in logo.split(X, y, groups=groups):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        if xgb:
+            y_train, y_test = y[train_index], y[test_index]
+        else:
+            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
         # get key as group left out
         group_left_out = df.iloc[test_index]["video"].values[0][:5]
@@ -124,6 +137,26 @@ def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
             f1 = f1_score(y_test, y_pred, average="macro", zero_division=1)
         accuracy = accuracy_score(y_test, y_pred)
 
+        # # Plot confusion matrix for each group left out
+        # cm = confusion_matrix(y_test, y_pred)
+        # plt.figure(figsize=(8, 6))
+        # sns.heatmap(
+        #     cm,
+        #     annot=True,
+        #     fmt="d",
+        #     cmap="Blues",
+        #     xticklabels=clf.classes_,
+        #     yticklabels=clf.classes_,
+        # )
+        # plt.title(f"Confusion Matrix - Group Left Out: {group_left_out}")
+        # plt.xlabel("Predicted")
+        # plt.ylabel("True")
+        # plt.show()
+
+        # Save true and predicted labels for final confusion matrix
+        all_y_true.extend(y_test)
+        all_y_pred.extend(y_pred)
+
         # save results in a dict
         evaluation_metrics[group_left_out] = {
             "accuracy": accuracy,
@@ -132,11 +165,32 @@ def leave_one_group_out_cv(df, X, y, groups, clf: Classifier) -> pd.DataFrame:
             "f1": f1,
         }
 
+    # Plot the final confusion matrix with all true and predicted labels
+    final_cm = confusion_matrix(all_y_true, all_y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(
+        final_cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=clf.classes_,
+        yticklabels=clf.classes_,
+    )
+    plt.title("Final Confusion Matrix - All Groups")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.show()
+
+    # Save the final model if a file path is provided
+    if model_save_path:
+        with open(model_save_path, "wb") as model_file:
+            pickle.dump(clf, model_file)
+
     results = pd.DataFrame.from_dict(evaluation_metrics, orient="index")
     results = results.reset_index()
     results = results.rename(columns={"index": "group_left_out"})
 
-    # get mean accuracy, precision, recall and f1-score
+    # get mean accuracy, precision, recall, and f1-score
     results["mean_accuracy"] = results["accuracy"].mean()
     results["mean_precision"] = results["precision"].mean()
     results["mean_recall"] = results["recall"].mean()
