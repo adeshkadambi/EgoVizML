@@ -17,7 +17,7 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from sklearn.model_selection import KFold, LeaveOneGroupOut, cross_validate
+from sklearn.model_selection import LeaveOneGroupOut
 
 
 logging.basicConfig(
@@ -66,38 +66,7 @@ def evaluate_model(clf: Classifier, X_test, y_test):
     return report, matrix, preds_df
 
 
-def evaluate_k_fold(clf: Classifier, X, y, k=5, seed=0):
-    """Evaluate a classifier using k-fold cross validation."""
-
-    kf = KFold(n_splits=k, random_state=seed, shuffle=True)
-
-    # get f1, precision, and recall scores for each fold
-    scoring = ["f1_macro", "precision_macro", "recall_macro"]
-    scores = cross_validate(
-        clf,
-        X,
-        y,
-        scoring=scoring,
-        cv=kf,
-        return_train_score=True,
-    )
-
-    # print the mean of each score
-    print(
-        f"f1_macro: {scores['test_f1_macro'].mean()} +/- {scores['test_f1_macro'].std()}"
-    )
-
-    score_df = pd.DataFrame(scores)
-    score_df["model"] = clf.__class__.__name__
-    score_df["mean_f1_macro"] = round(score_df["test_f1_macro"].mean(), 2)
-    score_df["std_f1_macro"] = round(score_df["test_f1_macro"].std(), 2)
-
-    return score_df
-
-
-def leave_one_group_out_cv(
-    df, X, y, groups, clf: Classifier, model_save_path: Optional[str] = None, xgb=False
-) -> pd.DataFrame:
+def logocv(df, X, y, groups, clf: Classifier):
     """Evaluate a classifier using leave one group out cross-validation."""
 
     logo = LeaveOneGroupOut()
@@ -107,26 +76,15 @@ def leave_one_group_out_cv(
 
     for train_index, test_index in logo.split(X, y, groups=groups):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-
-        if xgb:
-            y_train, y_test = y[train_index], y[test_index]
-        else:
-            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        y_train, y_test = y[train_index], y[test_index]
 
         # get key as group left out
         group_left_out = df.iloc[test_index]["video"].values[0][:5]
 
-        # Initialize and train the classifier
+        # initialize and train the classifier
         clf.fit(X_train, y_train)
 
-        # log that training is complete
-        logging.info(
-            "Training complete for %s, group left out: %s",
-            clf.__class__.__name__,
-            group_left_out,
-        )
-
-        # Make predictions and evaluate the model
+        # make predictions and evaluate the model
         y_pred = clf.predict(X_test)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
@@ -137,23 +95,6 @@ def leave_one_group_out_cv(
             f1 = f1_score(y_test, y_pred, average="macro", zero_division=1)
         accuracy = accuracy_score(y_test, y_pred)
 
-        # # Plot confusion matrix for each group left out
-        # cm = confusion_matrix(y_test, y_pred)
-        # plt.figure(figsize=(8, 6))
-        # sns.heatmap(
-        #     cm,
-        #     annot=True,
-        #     fmt="d",
-        #     cmap="Blues",
-        #     xticklabels=clf.classes_,
-        #     yticklabels=clf.classes_,
-        # )
-        # plt.title(f"Confusion Matrix - Group Left Out: {group_left_out}")
-        # plt.xlabel("Predicted")
-        # plt.ylabel("True")
-        # plt.show()
-
-        # Save true and predicted labels for final confusion matrix
         all_y_true.extend(y_test)
         all_y_pred.extend(y_pred)
 
@@ -165,27 +106,8 @@ def leave_one_group_out_cv(
             "f1": f1,
         }
 
-    # Plot the final confusion matrix with all true and predicted labels
-    final_cm = confusion_matrix(all_y_true, all_y_pred)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(
-        final_cm,
-        annot=True,
-        fmt="d",
-        cmap="Blues",
-        xticklabels=clf.classes_,
-        yticklabels=clf.classes_,
-    )
-    plt.title("Final Confusion Matrix - All Groups")
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.show()
-
-    # Save the final model if a file path is provided
-    if model_save_path:
-        with open(model_save_path, "wb") as model_file:
-            pickle.dump(clf, model_file)
-
+    # get confusion matrix and results
+    cm = confusion_matrix(all_y_true, all_y_pred)
     results = pd.DataFrame.from_dict(evaluation_metrics, orient="index")
     results = results.reset_index()
     results = results.rename(columns={"index": "group_left_out"})
@@ -199,4 +121,21 @@ def leave_one_group_out_cv(
     # log complete
     logging.info("LOGOCV complete for %s", clf.__class__.__name__)
 
-    return results
+    return results, cm
+
+
+def plot_cm(cm, clf, title="Confusion Matrix", figsize=(8, 6)):
+    """Plot a confusion matrix."""
+    plt.figure(figsize=figsize)
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=clf.classes_,
+        yticklabels=clf.classes_,
+    )
+    plt.title(title)
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.show()
