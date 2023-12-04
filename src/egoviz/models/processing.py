@@ -44,7 +44,9 @@ def generate_df_from_preds(preds: dict[dict], save_path: str | None = None):
     return df
 
 
-def generate_counts_df(df: pd.DataFrame) -> pd.DataFrame:
+def generate_counts_df(
+    df: pd.DataFrame, weighted: bool = False, weight: int | None = None
+) -> pd.DataFrame:
     """Generates a dataframe with counts of active/inactive objects per video."""
 
     def count_occurrences(classes, active):
@@ -62,20 +64,40 @@ def generate_counts_df(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # Create a new DataFrame from class_counts and active_counts
-    counts_df = pd.DataFrame(
-        df.apply(
-            lambda row: {
-                "adl": row["adl"],
-                "video": row["video"],
-                **{f"count_{key}": value for key, value in row["class_counts"].items()},
-                **{
-                    f"active_{key}": value
-                    for key, value in row["active_counts"].items()
+    if weighted:
+        assert weight is not None, "weight must be provided when weighted=True"
+        counts_df = pd.DataFrame(
+            df.apply(
+                lambda row: {
+                    "adl": row["adl"],
+                    "video": row["video"],
+                    **{
+                        f"count_{key}": value
+                        + (weight * row["active_counts"].get(key, 0))
+                        for key, value in row["class_counts"].items()
+                    },
                 },
-            },
-            axis=1,
-        ).tolist()
-    )
+                axis=1,
+            ).tolist()
+        )
+    else:
+        counts_df = pd.DataFrame(
+            df.apply(
+                lambda row: {
+                    "adl": row["adl"],
+                    "video": row["video"],
+                    **{
+                        f"count_{key}": value
+                        for key, value in row["class_counts"].items()
+                    },
+                    **{
+                        f"active_{key}": value
+                        for key, value in row["active_counts"].items()
+                    },
+                },
+                axis=1,
+            ).tolist()
+        )
 
     # Group by video and sum the values for each video
     grouped_counts_df = counts_df.groupby("video").agg(
@@ -86,3 +108,17 @@ def generate_counts_df(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return grouped_counts_df.reset_index()
+
+
+def row_wise_min_max_scaling(df):
+    """Perform row-wise min-max scaling on a dataframe."""
+    # Extract the columns you want to scale (excluding non-numeric columns if any)
+    columns_to_scale = df.select_dtypes(include="number").columns
+
+    # Perform row-wise min-max scaling
+    df_scaled = df.copy()
+    df_scaled[columns_to_scale] = df_scaled[columns_to_scale].apply(
+        lambda row: (row - row.min()) / (row.max() - row.min()), axis=1
+    )
+
+    return df_scaled

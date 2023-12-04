@@ -112,11 +112,14 @@ def logocv(df, X, y, groups, clf: Classifier):
     results = results.reset_index()
     results = results.rename(columns={"index": "group_left_out"})
 
-    # get mean accuracy, precision, recall, and f1-score
-    results["mean_accuracy"] = results["accuracy"].mean()
-    results["mean_precision"] = results["precision"].mean()
-    results["mean_recall"] = results["recall"].mean()
-    results["mean_f1"] = results["f1"].mean()
+    # get the median of the results
+    results["median_accuracy"] = results["accuracy"].median()
+    results["median_precision"] = results["precision"].median()
+    results["median_recall"] = results["recall"].median()
+    results["median_f1"] = results["f1"].median()
+
+    # add model name
+    results["model"] = clf.__class__.__name__
 
     # log complete
     logging.info("LOGOCV complete for %s", clf.__class__.__name__)
@@ -124,18 +127,20 @@ def logocv(df, X, y, groups, clf: Classifier):
     return results, cm
 
 
-def plot_cm(cm, clf, title="Confusion Matrix", figsize=(8, 6)):
-    """Plot a confusion matrix."""
-    plt.figure(figsize=figsize)
-    sns.heatmap(
-        cm,
-        annot=True,
-        fmt="d",
-        cmap="Blues",
-        xticklabels=clf.classes_,
-        yticklabels=clf.classes_,
-    )
-    plt.title(title)
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
-    plt.show()
+def evaluate_models(models, df, label_encoder):
+    """Evaluate a list of models using LOGOCV."""
+    X = df.drop(["adl", "video"], axis=1)
+    y = df["adl"]
+    y_encoded = label_encoder.fit_transform(y)
+    groups = df["video"].str[:5]
+
+    results = {}
+
+    for name, clf in models:
+        result = logocv(df, X, y_encoded, groups, clf)
+        results[name] = result
+
+    # concat result[0] for result in results.values()
+    results_df = pd.concat([result[0] for result in results.values()])
+
+    return results, results_df
