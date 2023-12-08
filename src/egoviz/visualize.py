@@ -1,26 +1,50 @@
 """This module contains functions for visualizing sklearn models or images."""
 
+from typing import Protocol
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cv2
+import pandas as pd
+import numpy as np
 
 from egoviz.models.evaluation import Classifier
 
 
-def plot_cm(cm, clf: Classifier, title: str = "Confusion Matrix", figsize=(8, 6)):
-    """Plot a confusion matrix."""
-    plt.figure(figsize=figsize)
-    sns.heatmap(
+class LabelEncoder(Protocol):
+    """Protocol for sklearn LabelEncoders."""
+
+    def fit_transform(self, y):
+        ...
+
+    def inverse_transform(self, y):
+        ...
+
+
+def plot_cm(
+    cm,
+    clf: Classifier,
+    label_encoder: LabelEncoder,
+    normalize: bool = False,
+    title: str = "Confusion Matrix",
+    figsize=(8, 6),
+):
+    """Plot a confusion matrix with the option to normalize."""
+    if normalize:
+        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+        fmt = ".2f"
+    else:
+        fmt = "d"
+
+    df_cm = pd.DataFrame(
         cm,
-        annot=True,
-        fmt="d",
-        cmap="Blues",
-        xticklabels=clf.classes_,
-        yticklabels=clf.classes_,
+        index=label_encoder.inverse_transform(clf.classes_),
+        columns=label_encoder.inverse_transform(clf.classes_),
     )
+    fig = plt.figure(figsize=figsize)
+    sns.heatmap(df_cm, annot=True, fmt=fmt, cmap="Blues")
     plt.title(title)
-    plt.xlabel("Predicted")
-    plt.ylabel("True")
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
     plt.show()
 
 

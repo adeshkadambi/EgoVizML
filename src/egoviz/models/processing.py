@@ -44,6 +44,29 @@ def generate_df_from_preds(preds: dict[dict], save_path: str | None = None):
     return df
 
 
+def generate_binary_presence_df(
+    df: pd.DataFrame, weighted: bool = False, weight: int | None = None
+) -> pd.DataFrame:
+    """Generates a dataframe with binary presence of objects per video."""
+
+    def binary_presence(classes, active) -> tuple[list[str], list[bool]]:
+        objs: dict[str, int] = {}
+        for c, a in zip(classes, active):
+            # add c to dict if not already present, with value 0 if a is false, 1 if a is true.
+            # if value is already 1, do nothing
+            objs[c] = objs.get(c, 0) + (1 if a else 0)
+
+        # return two lists: (1) objects (keys) and (2) if they are active as a bool (values)
+        return list(objs.keys()), [bool(x) for x in list(objs.values())]
+
+    # get binary presence for each frame
+    df["classes"], df["active"] = zip(
+        *df.apply(lambda row: binary_presence(row["classes"], row["active"]), axis=1)
+    )
+
+    return generate_counts_df(df, weighted=weighted, weight=weight)
+
+
 def generate_counts_df(
     df: pd.DataFrame, weighted: bool = False, weight: int | None = None
 ) -> pd.DataFrame:

@@ -1,13 +1,11 @@
 """This module contains functions for evaluating sklearn models."""
 
 import warnings
-from typing import Optional, Protocol
+from typing import Protocol
 import logging
+from dataclasses import dataclass
 
 import pandas as pd
-import pickle
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import (
     accuracy_score,
@@ -39,6 +37,15 @@ class Classifier(Protocol):
 
     def predict_proba(self, X):
         ...
+
+
+@dataclass
+class Results:
+    """Dataclass for storing results."""
+
+    clf: str
+    result: pd.DataFrame
+    cm: pd.DataFrame
 
 
 def get_preds(clf: Classifier, X_test):
@@ -127,20 +134,55 @@ def logocv(df, X, y, groups, clf: Classifier):
     return results, cm
 
 
-def evaluate_models(models, df, label_encoder):
+def evaluate_models(models, df, label_encoder) -> tuple[list[Results], pd.DataFrame]:
     """Evaluate a list of models using LOGOCV."""
     X = df.drop(["adl", "video"], axis=1)
     y = df["adl"]
     y_encoded = label_encoder.fit_transform(y)
     groups = df["video"].str[:5]
 
-    results = {}
+    results: list[Results] = []
 
     for name, clf in models:
         result = logocv(df, X, y_encoded, groups, clf)
-        results[name] = result
+        results.append(Results(name, *result))
 
     # concat result[0] for result in results.values()
-    results_df = pd.concat([result[0] for result in results.values()])
+    results_df = pd.concat([result.result for result in results])
 
     return results, results_df
+
+
+def display_median_table(results_df) -> pd.DataFrame:
+    return (
+        results_df[
+            [
+                "median_accuracy",
+                "median_precision",
+                "median_recall",
+                "median_f1",
+                "model",
+            ]
+        ]
+        .groupby("model")
+        .first()
+        .reset_index()
+    )
+
+
+def display_pct_table(results_df, threshold=0.5) -> pd.DataFrame:
+    return (
+        results_df[["f1", "median_f1", "model"]]
+        .groupby("model")
+        .agg(
+            # get the first median f1 score
+            median_f1=("median_f1", "first"),
+            # get the percentage of f1 scores that are above 0.5
+            percentage_above_05=(
+                "f1",
+                lambda x: round(len(x[x > threshold]) / len(x), 2),
+            ),
+        )
+        .reset_index()
+        .rename(columns={"percentage_above_05": f"pct_above_{threshold}"})
+    )
