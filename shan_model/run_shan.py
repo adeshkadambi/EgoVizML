@@ -24,13 +24,11 @@ from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.datasets as dset
 
-# from scipy.misc import imread
 from roi_data_layer.roidb import combined_roidb
 from roi_data_layer.roibatchLoader import roibatchLoader
 from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from model.rpn.bbox_transform import clip_boxes
 
-# from model.nms.nms_wrapper import nms
 from model.roi_layers import nms
 from model.rpn.bbox_transform import bbox_transform_inv
 from model.utils.net_utils import (
@@ -42,9 +40,7 @@ from model.utils.net_utils import (
     vis_detections_filtered_objects,
 )  # (1) here add a function to viz
 from model.utils.blob import im_list_to_blob
-from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet
-import pdb
 
 # Configure logging
 logging.basicConfig(
@@ -117,9 +113,6 @@ def parse_args():
         "--bs", dest="batch_size", help="batch_size", default=1, type=int
     )
     parser.add_argument("--vis", dest="vis", help="visualization mode", default=True)
-    parser.add_argument(
-        "--webcam_num", dest="webcam_num", help="webcam ID number", default=-1, type=int
-    )
     parser.add_argument("--thresh_hand", type=float, default=0.5, required=False)
     parser.add_argument("--thresh_obj", default=0.5, type=float, required=False)
 
@@ -179,10 +172,10 @@ def load_faster_rcnn_model(args):
 
     if not os.path.exists(model_dir):
         logging.error(
-            "There is no input directory for loading network from {}".format(model_dir)
+            "There is no input directory for loading network from %s", model_dir
         )
-        raise Exception(
-            "There is no input directory for loading network from {}".format(model_dir)
+        raise FileNotFoundError(
+            "There is no input directory for loading network from %s", model_dir
         )
 
     load_name = os.path.join(model_dir, "faster_rcnn_1_8_132028.pth")
