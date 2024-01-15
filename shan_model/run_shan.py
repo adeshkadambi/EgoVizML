@@ -189,7 +189,7 @@ def load_faster_rcnn_model(args):
     )
     fasterRCNN.create_architecture()
 
-    logging.info("Loading checkpoint {}".format(load_name))
+    logging.info("Loading checkpoint %s", load_name)
     device = torch.device("cuda" if args.cuda > 0 else "cpu")
     checkpoint = torch.load(load_name, map_location=device if args.cuda <= 0 else None)
     fasterRCNN.load_state_dict(checkpoint["model"])
@@ -203,23 +203,27 @@ def load_faster_rcnn_model(args):
 
 def get_image_list(root_dir):
     img_list = []
-    for root, dirs, files in os.walk(root_dir):
-        if "frames" in dirs:
-            frames_path = os.path.join(root, "frames")
-            shan_path = os.path.join(root, "shan")
-            os.makedirs(shan_path, exist_ok=True)
-            for file in os.listdir(frames_path):
-                if file.endswith(".jpg"):
-                    img_path = os.path.join(frames_path, file)
-                    save_img_path = os.path.join(shan_path, file[:-4] + ".png")
-                    save_pkl_path = os.path.join(shan_path, file[:-4] + "_shan.pkl")
-                    img_list.append((img_path, save_img_path, save_pkl_path))
+
+    for root, dirs, _ in os.walk(root_dir):
+        for directory in dirs:
+            if any(
+                fname.endswith(".jpg")
+                for fname in os.listdir(os.path.join(root, directory))
+            ):
+                frames_path = os.path.join(root, directory)
+                shan_path = frames_path.replace("subclips", "subclips_shan")
+                for file in os.listdir(frames_path):
+                    if file.endswith(".jpg"):
+                        img_path = os.path.join(frames_path, file)
+                        save_img_path = os.path.join(shan_path, file[:-4] + ".png")
+                        save_pkl_path = os.path.join(shan_path, file[:-4] + "_shan.pkl")
+                        img_list.append((img_path, save_img_path, save_pkl_path))
     return img_list
 
 
 def main():
     args = parse_args()
-    logging.info("Called with args: {}".format(args))
+    logging.info("Called with args: %s", args)
 
     if args.cfg_file is not None:
         cfg_from_file(args.cfg_file)

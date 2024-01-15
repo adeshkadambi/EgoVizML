@@ -33,6 +33,11 @@
 	// Uncomment the next line to run commands after the container is created.
 	"postCreateCommand": "apt-get update && apt install git-all -y && apt-get install python3-opencv -y"
 
+	// Add volume mounts to the container.
+	"mounts": [
+		"source=D:\\PhD\\aim1_data,target=/data/,type=bind"
+	]
+
 	// Configure tool-specific properties.
 	// "customizations": {},
 
