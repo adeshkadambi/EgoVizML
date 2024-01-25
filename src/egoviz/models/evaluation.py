@@ -5,7 +5,10 @@ import logging
 from typing import Protocol
 from dataclasses import dataclass
 
+import joblib
 import pandas as pd
+import polars as pl
+import numpy as np
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import (
     accuracy_score,
@@ -48,6 +51,7 @@ class Results:
     result: pd.DataFrame
     cm: pd.DataFrame
     auc: float
+    samples: pd.DataFrame
 
 
 def get_preds(clf: Classifier, X_test):
@@ -75,11 +79,12 @@ def evaluate_model(clf: Classifier, X_test, y_test):
     return report, matrix, preds_df
 
 
-def logocv(df, X, y, groups, clf: Classifier):
+def logocv(df, X, y, groups, clf: Classifier, label_encoder):
     """Evaluate a classifier using leave one group out cross-validation."""
 
     logo = LeaveOneGroupOut()
     evaluation_metrics = {}
+    samples = {}
     all_y_true = []
     all_y_pred = []
     all_y_prob = []
@@ -100,10 +105,10 @@ def logocv(df, X, y, groups, clf: Classifier):
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
             precision = precision_score(
-                y_test, y_pred, average="macro", zero_division=1
+                y_test, y_pred, average="weighted", zero_division=1
             )
-            recall = recall_score(y_test, y_pred, average="macro", zero_division=1)
-            f1 = f1_score(y_test, y_pred, average="macro", zero_division=1)
+            recall = recall_score(y_test, y_pred, average="weighted", zero_division=1)
+            f1 = f1_score(y_test, y_pred, average="weighted", zero_division=1)
         accuracy = accuracy_score(y_test, y_pred)
 
         all_y_true.extend(y_test)
@@ -118,10 +123,29 @@ def logocv(df, X, y, groups, clf: Classifier):
             "f1": f1,
         }
 
+        # create samples dict
+        samples[group_left_out] = {
+            "videos": df.iloc[test_index]["video"].values,
+            "X_test": X_test,
+            "y_test_label": label_encoder.inverse_transform(y_test),
+            "y_pred_label": label_encoder.inverse_transform(y_pred),
+            "y_test": y_test,
+            "y_pred": y_pred,
+        }
+
     # get confusion matrix and results
     cm = confusion_matrix(all_y_true, all_y_pred)
     auc = roc_auc_score(all_y_true, all_y_prob, multi_class="ovr", average="weighted")
+    results = create_results_df(evaluation_metrics, clf)
+    samples = pd.DataFrame.from_dict(samples, orient="index")
 
+    # log complete
+    logging.info("LOGOCV complete for %s", clf.__class__.__name__)
+
+    return results, cm, auc, samples
+
+
+def create_results_df(evaluation_metrics: dict, clf: Classifier) -> pd.DataFrame:
     results = pd.DataFrame.from_dict(evaluation_metrics, orient="index")
     results = results.reset_index()
     results = results.rename(columns={"index": "group_left_out"})
@@ -135,10 +159,7 @@ def logocv(df, X, y, groups, clf: Classifier):
     # add model name
     results["model"] = clf.__class__.__name__
 
-    # log complete
-    logging.info("LOGOCV complete for %s", clf.__class__.__name__)
-
-    return results, cm, auc
+    return results
 
 
 def evaluate_models(models, df, label_encoder) -> tuple[list[Results], pd.DataFrame]:
@@ -151,7 +172,7 @@ def evaluate_models(models, df, label_encoder) -> tuple[list[Results], pd.DataFr
     results: list[Results] = []
 
     for name, clf in models:
-        result = logocv(df, X, y_encoded, groups, clf)
+        result = logocv(df, X, y_encoded, groups, clf, label_encoder)
         results.append(Results(name, *result))
 
     # concat result[0] for result in results.values()
