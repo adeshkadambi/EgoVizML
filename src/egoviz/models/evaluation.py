@@ -1,8 +1,8 @@
 """This module contains functions for evaluating sklearn models."""
 
 import warnings
-from typing import Protocol
 import logging
+from typing import Protocol
 from dataclasses import dataclass
 
 import pandas as pd
@@ -14,6 +14,7 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
+    roc_auc_score,
 )
 from sklearn.model_selection import LeaveOneGroupOut
 
@@ -46,6 +47,7 @@ class Results:
     clf: str
     result: pd.DataFrame
     cm: pd.DataFrame
+    auc: float
 
 
 def get_preds(clf: Classifier, X_test):
@@ -80,6 +82,7 @@ def logocv(df, X, y, groups, clf: Classifier):
     evaluation_metrics = {}
     all_y_true = []
     all_y_pred = []
+    all_y_prob = []
 
     for train_index, test_index in logo.split(X, y, groups=groups):
         X_train, X_test = X.iloc[train_index], X.iloc[test_index]
@@ -93,6 +96,7 @@ def logocv(df, X, y, groups, clf: Classifier):
 
         # make predictions and evaluate the model
         y_pred = clf.predict(X_test)
+        y_prob = clf.predict_proba(X_test)
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
             precision = precision_score(
@@ -104,6 +108,7 @@ def logocv(df, X, y, groups, clf: Classifier):
 
         all_y_true.extend(y_test)
         all_y_pred.extend(y_pred)
+        all_y_prob.extend(y_prob)
 
         # save results in a dict
         evaluation_metrics[group_left_out] = {
@@ -115,6 +120,8 @@ def logocv(df, X, y, groups, clf: Classifier):
 
     # get confusion matrix and results
     cm = confusion_matrix(all_y_true, all_y_pred)
+    auc = roc_auc_score(all_y_true, all_y_prob, multi_class="ovr", average="weighted")
+
     results = pd.DataFrame.from_dict(evaluation_metrics, orient="index")
     results = results.reset_index()
     results = results.rename(columns={"index": "group_left_out"})
@@ -131,7 +138,7 @@ def logocv(df, X, y, groups, clf: Classifier):
     # log complete
     logging.info("LOGOCV complete for %s", clf.__class__.__name__)
 
-    return results, cm
+    return results, cm, auc
 
 
 def evaluate_models(models, df, label_encoder) -> tuple[list[Results], pd.DataFrame]:

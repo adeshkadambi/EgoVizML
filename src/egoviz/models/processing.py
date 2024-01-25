@@ -49,6 +49,8 @@ def generate_binary_presence_df(
 ) -> pd.DataFrame:
     """Generates a dataframe with binary presence of objects per video."""
 
+    df = df.copy()
+
     def binary_presence(classes, active) -> tuple[list[str], list[bool]]:
         objs: dict[str, int] = {}
         for c, a in zip(classes, active):
@@ -71,6 +73,8 @@ def generate_counts_df(
     df: pd.DataFrame, weighted: bool = False, weight: int | None = None
 ) -> pd.DataFrame:
     """Generates a dataframe with counts of active/inactive objects per video."""
+
+    df = df.copy()
 
     def count_occurrences(classes, active):
         class_counts = Counter(classes)

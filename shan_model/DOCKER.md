@@ -5,17 +5,18 @@ docker build -t shan-container . -f Dockerfile
 
 ### To run the container:
 ```bash
-docker run -it --rm --gpus all -v $(pwd):/app shan-container
+docker run -it --rm --gpus all -v $(pwd):/app -v /mnt/d/PhD/aim1_data/:/aim1_data shan-container
 ```
 
 ### When inside the container:
 ```bash
 apt-get update
 apt-get install python3-opencv -y
-```
+``` 
 
 ### To run the model:
 ```bash
+cd ..
 python3.8 run_shan.py --image_dir images
 ```
 

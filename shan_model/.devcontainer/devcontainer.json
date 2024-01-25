@@ -31,7 +31,7 @@
 	// "forwardPorts": [],
 
 	// Uncomment the next line to run commands after the container is created.
-	"postCreateCommand": "apt-get update && apt install git-all -y && apt-get install python3-opencv -y"
+	"postCreateCommand": "apt-get update && apt install git-all -y && apt-get install python3-opencv -y",
 
 	// Add volume mounts to the container.
 	"mounts": [
