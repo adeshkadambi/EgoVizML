@@ -156,6 +156,18 @@ def create_results_df(evaluation_metrics: dict, clf: Classifier) -> pd.DataFrame
     results["median_recall"] = results["recall"].median()
     results["median_f1"] = results["f1"].median()
 
+    # mean of the results
+    results["mean_accuracy"] = results["accuracy"].mean()
+    results["mean_precision"] = results["precision"].mean()
+    results["mean_recall"] = results["recall"].mean()
+    results["mean_f1"] = results["f1"].mean()
+
+    # std of the results
+    results["std_accuracy"] = results["accuracy"].std()
+    results["std_precision"] = results["precision"].std()
+    results["std_recall"] = results["recall"].std()
+    results["std_f1"] = results["f1"].std()
+
     # add model name
     results["model"] = clf.__class__.__name__
 
@@ -198,14 +210,32 @@ def display_median_table(results_df) -> pd.DataFrame:
     )
 
 
+def display_mean_table(results_df) -> pd.DataFrame:
+    return (
+        results_df[
+            [
+                "mean_accuracy",
+                "mean_precision",
+                "mean_recall",
+                "mean_f1",
+                "model",
+            ]
+        ]
+        .groupby("model")
+        .first()
+        .reset_index()
+    )
+
+
 def display_pct_table(results_df, threshold=0.5) -> pd.DataFrame:
     return (
-        results_df[["f1", "median_f1", "model"]]
+        results_df[["f1", "median_f1", "mean_f1", "std_f1", "model"]]
         .groupby("model")
         .agg(
-            # get the first median f1 score
             median_f1=("median_f1", "first"),
-            # get the percentage of f1 scores that are above 0.5
+            mean_f1=("mean_f1", "first"),
+            std_f1=("std_f1", "first"),
+            # get the percentage of f1 scores that are above a threshold
             percentage_above_05=(
                 "f1",
                 lambda x: round(len(x[x > threshold]) / len(x), 2),
