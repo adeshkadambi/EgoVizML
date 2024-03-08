@@ -13,20 +13,20 @@ from egoviz.models.evaluation import Classifier
 class LabelEncoder(Protocol):
     """Protocol for sklearn LabelEncoders."""
 
-    def fit_transform(self, y):
-        ...
+    def fit_transform(self, y): ...
 
-    def inverse_transform(self, y):
-        ...
+    def inverse_transform(self, y): ...
 
 
 def plot_cm(
     cm,
     clf: Classifier,
-    label_encoder: LabelEncoder,
+    label_encoder: LabelEncoder | None = None,
     normalize: bool = False,
     title: str = "Confusion Matrix",
     figsize=(8, 6),
+    dpi=600,
+    annot_font_size=14,  # Add an argument for annotation font size
 ):
     """Plot a confusion matrix with the option to normalize."""
     if normalize:
@@ -37,11 +37,19 @@ def plot_cm(
 
     df_cm = pd.DataFrame(
         cm,
-        index=label_encoder.inverse_transform(clf.classes_),
-        columns=label_encoder.inverse_transform(clf.classes_),
+        index=(
+            label_encoder.inverse_transform(clf.classes_)
+            if label_encoder
+            else clf.classes_
+        ),
+        columns=(
+            label_encoder.inverse_transform(clf.classes_)
+            if label_encoder
+            else clf.classes_
+        ),
     )
-    fig = plt.figure(figsize=figsize)
-    sns.heatmap(df_cm, annot=True, fmt=fmt, cmap="Blues")
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    sns.heatmap(df_cm, annot=True, fmt=fmt, cmap="Blues", annot_kws={"size": annot_font_size})
     plt.title(title)
     plt.ylabel("True label")
     plt.xlabel("Predicted label")
