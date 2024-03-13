@@ -53,7 +53,7 @@ def main():
     with concurrent.futures.ThreadPoolExecutor() as executor:
         for root, dirs, files in os.walk(args.dirpath):
             for file in files:
-                if file.endswith(".MP4"):
+                if file.endswith(".MP4") or file.endswith(".mov"):
                     executor.submit(process_video, root, file, 0.2)
 
 
