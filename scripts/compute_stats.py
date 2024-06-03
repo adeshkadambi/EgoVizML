@@ -1,3 +1,7 @@
+"""
+This module computes stats for the different feature sets in the Aim 2 paper.
+"""
+
 from scipy import stats
 import numpy as np
 
@@ -80,11 +84,9 @@ def improvements(inputs):
     # Calculate differences in mean F1-scores between Method 2 and Method 1
     differences = [raw_f1_2[i] - raw_f1_1[i] for i in range(len(raw_f1_1))]
     mean_difference = sum(differences) / len(differences)
-
-    # Use the formula for combining standard deviations of independent variables
     std_difference = (
-        sum((raw_std_2[i] ** 2 + raw_std_1[i] ** 2) / 2 for i in range(len(raw_std_1)))
-        / len(raw_std_1)
+        sum((difference - mean_difference) ** 2 for difference in differences)
+        / len(differences)
     ) ** 0.5
 
     return config, mean_difference, std_difference
