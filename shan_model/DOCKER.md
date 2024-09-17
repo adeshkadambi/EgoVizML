@@ -5,8 +5,9 @@ docker build -t shan-container . -f Dockerfile
 
 ### To run the container:
 ```bash
-docker run -it --rm --gpus all -v $(pwd):/app -v /mnt/d/PhD/aim1_data/:/workspace/data_mounted shan-container
+docker run -it --rm --gpus all -v $(pwd):/app -v /mnt/e/PhD/aim1_data/:/workspace/data_mounted shan-container
 ```
+Note: M
 
 ### When inside the container:
 ```bash
