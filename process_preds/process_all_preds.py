@@ -12,10 +12,11 @@ import pickle
 
 import numpy as np
 import torch
-from egoviz.models.processing import load_pickle
 from process_detic import _load_mapping_df, process_detic_preds
 from torchvision.ops import box_iou
 from tqdm import tqdm
+
+from egoviz.models.processing import load_pickle
 
 
 def get_active_objects(
@@ -38,7 +39,26 @@ def get_active_objects(
         return np.array([])
 
 
-def process_all_preds(dirpath: str, active_iou: float):
+def process_all_preds(dirpath: str, active_iou: float) -> dict:
+    """
+    The pipeline expects object detection and hand-object interaction
+    predictions organized in this structure:
+
+    root_directory/
+    ├── communication-management/
+    │   ├── detic/
+    │   │   ├── video1_frame1.pkl
+    │   │   └── ...
+    │   └── shan/
+    │       ├── video1_frame1.pkl
+    │       └── ...
+    ├── functional-mobility/
+    │   ├── detic/
+    │   └── shan/
+    └── ...other activity folders... (specified in adls dict below)
+
+    """
+
     all_preds = {}
     adls = [
         "communication-management",
@@ -48,7 +68,7 @@ def process_all_preds(dirpath: str, active_iou: float):
         "leisure-other-activities",
         "meal-preparation-cleanup",
         "self-feeding",
-        # "test_folder"
+        # add any subfolders here
     ]
 
     for adl in adls:
@@ -107,7 +127,7 @@ def process_all_preds(dirpath: str, active_iou: float):
     with open(savepath, "wb") as f:
         pickle.dump(all_preds, f)
 
-    return 1
+    return all_preds
 
 
 def main():
